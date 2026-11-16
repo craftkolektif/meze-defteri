@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meze Defteri</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5d2a72">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Düzen: tek sütun telefon aracı; üstte durum, ortada kaydırılan liste, altta beş sekme; formlar alttan açılan panelde. */
+:root{
+  --bg:#f4f2f6; --surface:#ffffff; --ink:#221a2b; --muted:#6c6276; --line:#ddd7e3;
+  --accent:#5d2a72; --accent-ink:#ffffff; --accent-soft:#efe6f4;
+  --ok:#1f7a4d; --ok-bg:#e2f3ea; --warn:#8a5a00; --warn-bg:#fbefd0; --crit:#b3261e; --crit-bg:#fbe4e2;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17131c; --surface:#221c29; --ink:#efeaf3; --muted:#a79db2; --line:#3a3144;
+  --accent:#c79be0; --accent-ink:#1c1222; --accent-soft:#33263d;
+  --ok:#6fd3a0; --ok-bg:#173426; --warn:#f0c160; --warn-bg:#3b2e10; --crit:#ff9a92; --crit-bg:#431c19;
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#17131c; --surface:#221c29; --ink:#efeaf3; --muted:#a79db2; --line:#3a3144;
+  --accent:#c79be0; --accent-ink:#1c1222; --accent-soft:#33263d;
+  --ok:#6fd3a0; --ok-bg:#173426; --warn:#f0c160; --warn-bg:#3b2e10; --crit:#ff9a92; --crit-bg:#431c19;
+  color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.4 var(--body);display:flex;flex-direction:column;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:20px;letter-spacing:.01em}
+h2{font-size:17px}
+h3{font-size:17px}
+.num{font-variant-numeric:tabular-nums}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+#stat{font-size:12px;color:var(--muted);text-align:right}
+#stat button{font:inherit;color:var(--crit);background:none;border:0;text-decoration:underline;padding:0}
+main{flex:1;overflow-y:auto;padding:14px 16px 24px;display:flex;flex-direction:column;gap:12px}
+nav.tabs{display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line)}
+nav.tabs button{font:500 12px/1.15 var(--body);color:var(--muted);background:none;border:0;border-top:3px solid transparent;padding:11px 2px 12px}
+nav.tabs button[aria-current="true"]{color:var(--accent);border-top-color:var(--accent);font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.card>header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.tot{font-size:13px;color:var(--muted)}
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rows li{border-top:1px solid var(--line);padding:8px 0;display:flex;flex-direction:column;gap:6px}
+.r1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.r2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag{font:700 11px var(--display);letter-spacing:.06em;padding:1px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);margin-right:6px}
+.tag.raf{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.pill{font-size:12px;font-weight:500;padding:2px 8px;border-radius:99px;background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.qty{font:700 17px var(--display);white-space:nowrap}
+.muted{color:var(--muted)} .small{font-size:13px}
+.btn{font:500 14px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn:disabled{opacity:.5}
+.btn:focus-visible,input:focus-visible,select:focus-visible,nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+.bar .btn{flex:1 1 auto}
+.sum{display:flex;gap:8px;flex-wrap:wrap}
+.sum .pill{font-size:13px;padding:4px 10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);flex:1 1 140px;min-width:0}
+input,select,textarea{font:400 16px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+.grid2{display:flex;gap:10px;flex-wrap:wrap}
+.cevrimdisi .foto{display:none!important}
+.gizli{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
+label.btn{position:relative}
+textarea{min-height:140px;resize:vertical}
+.indir{display:none}
+body.indir-ok .indir{display:inline-flex}
+.etiket{border:2px dashed var(--accent);border-radius:8px;padding:10px;display:flex;gap:16px;justify-content:space-around;text-align:center}
+.etiket b{display:block;font:700 22px var(--display)}
+.msg{font-size:13px;padding:8px 10px;border-radius:8px;background:var(--accent-soft);color:var(--ink)}
+.msg.err{background:var(--crit-bg);color:var(--crit)}
+.msg.warn{background:var(--warn-bg);color:var(--warn)}
+.orow{border-top:1px solid var(--line);padding:8px 0;display:grid;grid-template-columns:1fr 1fr 1fr 92px;gap:6px;align-items:end}
+.orow .n{grid-column:1/-1;font-weight:600}
+.orow .c{font-size:12px;color:var(--muted)}
+.orow .c b{display:block;font:700 16px var(--display);color:var(--ink)}
+.orow input{padding:7px 8px;text-align:right}
+.orow i,.hint{display:block;font:400 12px var(--body);font-style:normal;color:var(--muted);margin-top:2px}
+.qty small{font:500 13px var(--body);color:var(--muted)}
+.fark{font-weight:600}
+.toplam{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.toplam .qty{font-size:22px}
+.bild{border-left:4px solid var(--accent)}
+.bild h3{font-size:15px;display:flex;justify-content:space-between;gap:8px}
+.bild ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.bild .sec{display:flex;flex-direction:column;gap:4px;padding-top:6px;border-top:1px solid var(--line)}
+.say{font:700 13px var(--display);padding:0 7px;border-radius:99px;background:var(--crit-bg);color:var(--crit)}
+.say.warn{background:var(--warn-bg);color:var(--warn)}
+.say.ok{background:var(--ok-bg);color:var(--ok)}
+.ana{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ana div{font-size:12px;color:var(--muted)}
+.ana b{display:block;font:700 16px var(--display);color:var(--ink)}
+.srow{border-top:1px solid var(--line);padding:7px 0;display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center}
+.srow input{text-align:right}
+#scrim{position:fixed;inset:0;background:rgba(20,10,30,.5);display:none;align-items:flex-end;z-index:5}
+#scrim.on{display:flex}
+#sheet{background:var(--surface);width:100%;max-height:92%;overflow-y:auto;border-radius:14px 14px 0 0;padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px}
+#sheet>header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#sheetBody{display:flex;flex-direction:column;gap:12px}
+.krow{border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+ol.adim{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+@media (min-width:700px){main,header.top{padding-left:calc(50% - 334px);padding-right:calc(50% - 334px)}#sheet{max-width:700px;margin:0 auto}}
+@media (prefers-reduced-motion:no-preference){.btn{transition:opacity .15s}}
+</style>
+</head>
+<body>
+<header class="top"><h1>Meze Defteri</h1><button type="button" class="btn sm pri" id="kurBtn" hidden>Uygulamayı yükle</button><div id="stat">Yükleniyor…</div></header>
+<main id="main"><div class="card"><p class="muted">Kayıtlar yükleniyor…</p></div></main>
+<nav class="tabs" id="tabs" aria-label="Bölümler">
+  <button type="button" data-tab="stok">Stok</button>
+  <button type="button" data-tab="siparis">Sipariş</button>
+  <button type="button" data-tab="satis">Satış</button>
+  <button type="button" data-tab="imha">İmha</button>
+  <button type="button" data-tab="reel">Reel stok</button>
+  <button type="button" data-tab="urun">Ürünler</button>
+</nav>
+<div id="scrim"><section id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT">
+  <header><h2 id="sheetT"></h2><button type="button" class="btn sm" data-act="kapat">Kapat</button></header>
+  <div id="sheetBody"></div>
+</section></div>
+<script src="xlsx.full.min.js"></script>
+<script>
+"use strict";
+/* ---------- yardımcılar ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>iso(new Date());
+const okT=s=>/^\d{4}-\d{2}-\d{2}$/.test(s||'');
+const pd=s=>{const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])};
+const addD=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return iso(d)};
+const diff=(a,b)=>Math.round((pd(a)-pd(b))/864e5);
+const GUN=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+const fmt=s=>okT(s)?s.slice(8)+'.'+s.slice(5,7)+' '+GUN[pd(s).getDay()]:'—';
+const fmtY=s=>okT(s)?s.slice(8)+'.'+s.slice(5,7)+'.'+s.slice(0,4):'';
+const num=v=>{let s=String(v??'').trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=parseFloat(s);return isFinite(n)?n:0};
+const r2=n=>Math.round(n*1000)/1000; // kg için gram hassasiyeti
+const q=n=>r2(n).toLocaleString('tr-TR');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const norm=s=>String(s??'').toLocaleLowerCase('tr').replace(/[^a-z0-9çğıöşü]/g,'');
+const sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+
+/* ---------- durum ---------- */
+let S={urun:[],lot:[],raf:[],sip:[],sistem:null,eksi:{}};           // 'ana' belgesi
+let M={};                                         // 'ay-YYYY-AA' belgeleri: {satis:{gün:{pid:miktar}},rafLog:[],imha:[]}
+const C={sheet:null,O:null,T:null};               // form bağlamları
+let APP=false,fotoVar=null,tab='stok',store=null,ready=false,sample=null,downloads=null,sheetFn=null;
+const P=id=>S.urun.find(u=>u.id===id);
+const ay=t=>M[t.slice(0,7)]??={satis:{},rafLog:[],imha:[]};
+const ayKey=t=>'ay-'+t.slice(0,7);
+const birim=()=>'kg';
+const fmtN=n=>String(r2(n)).replace('.',',');
+
+/* Ana değerler: kutu = kutu gramajı (kg); sinir = SKT'den kaç gün öncesine kadar rafa çıkabilir;
+   RKT kuralı: 'acilis' = açılış + gün, 'skt' = SKT − gün; RKT SKT'yi geçemez */
+const kk=u=>{const k=+u?.kutu;return k>0?k:0};
+const kutuN=(u,kg)=>kk(u)?Math.round(kg/kk(u)*10)/10:null;
+const mk=(u,kg)=>q(kg)+' kg'+(kk(u)?' · '+q(kutuN(u,kg))+' kutu':'');
+const qtyH=(u,kg)=>`<span class="qty num">${q(kg)} kg${kk(u)?`<small> · ${q(kutuN(u,kg))} kutu</small>`:''}</span>`;
+const kutuI=(u,kg)=>kk(u)?`<i>${q(kutuN(u,kg))} kutu</i>`:'';
+const enGec=(u,skt)=>addD(skt,-(+u.sinir||0));
+function rktHesap(u,skt,acilis){if(!u.kural)return '';const r=u.kural==='skt'?addD(skt,-(+u.gun||0)):addD(acilis,+u.gun||0);return r<skt?r:skt}
+const kuralYazi=u=>`Rafa en geç SKT'den ${+u.sinir||0} gün önce çıkar · RKT: `+(!u.kural?'etiketten elle girilir':u.kural==='skt'?`SKT − ${+u.gun||0} gün`:`açılış + ${+u.gun||0} gün`);
+const depo=pid=>sum(S.lot.filter(l=>l.pid===pid),l=>l.depo);
+const rafT=pid=>sum(S.raf.filter(r=>r.pid===pid),r=>r.m);
+const yolda=pid=>sum(S.sip.filter(s=>s.durum==='bekliyor'),s=>+(s.k[pid]||0));
+
+/* ---------- kayıt ---------- */
+const use=n=>window.claude?.use?window.claude.use(n).catch(()=>null):Promise.resolve(null);
+const sure=(p,ms)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r({code:'zaman'}),ms))]);
+const dirty=new Set();let chain=Promise.resolve(),timer=null;
+async function dosyaVer(ad,data,tip){
+  if(downloads)return downloads.save({filename:ad,data});
+  const u=URL.createObjectURL(new Blob([data],{type:tip})),a=document.createElement('a');a.href=u;a.download=ad;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);
+}
+function setStat(html){$('#stat').innerHTML=html}
+function save(...keys){keys.forEach(k=>dirty.add(k));setStat('Kaydediliyor…');clearTimeout(timer);timer=setTimeout(flush,300)}
+function flush(){
+  chain=chain.then(async()=>{
+    const ks=[...dirty];dirty.clear();let hata=null;
+    for(const k of ks){
+      const body=k==='ana'?S:M[k.slice(3)];
+      try{await store.put(k,JSON.parse(JSON.stringify(body)))}catch(e){dirty.add(k);hata=e}
+    }
+    if(hata)setStat((hata.code==='quota_exceeded'?'Kayıt alanı doldu. ':'Kaydedilemedi. ')+'<button type="button" data-act="tekrarKaydet">Tekrar dene</button>');
+    else if(!dirty.size)setStat(store.yerel?'Bu telefonda kayıtlı':'Kaydedildi');
+  });
+}
+async function kur(){
+  APP=!window.claude;if(APP)document.body.classList.add('cevrimdisi','indir-ok');
+  const [db,user,sm,dl]=await Promise.all([use('db'),use('user'),use('sample'),use('downloads')]);
+  downloads=dl;if(dl)document.body.classList.add('indir-ok');
+  if(sm){sample=sm;sm.limits().then(l=>{fotoVar=!!l?.images}).catch(()=>{fotoVar=false})}
+  const id=user?await user.id():null;
+  if(db&&id){
+    const col=db.collection('data/users/'+id);
+    store={yerel:false,
+      async load(){const s=await sure(col.get(),10000);const o={};s.docs.forEach(d=>{o[d.id]=JSON.parse(JSON.stringify(d.data()))});return o},
+      put:(k,b)=>col.doc(k).set(b)};
+  }else{
+    store={yerel:true,
+      async load(){const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('meze:'))o[k.slice(5)]=JSON.parse(localStorage.getItem(k))}}catch(e){}return o},
+      async put(k,b){localStorage.setItem('meze:'+k,JSON.stringify(b))}};
+    try{navigator.storage?.persist?.()}catch(e){};
+  }
+  await yukle();
+}
+async function yukle(){
+  setStat('Yükleniyor…');
+  try{
+    const o=await store.load();
+    if(o.ana)S=Object.assign({urun:[],lot:[],raf:[],sip:[],sistem:null,eksi:{}},o.ana);
+    for(const u of S.urun)if(u.sinir==null)u.sinir=u.kural==='skt'?(+u.gun||0):(+u.marj||0);
+    for(const k in o)if(k.startsWith('ay-'))M[k.slice(3)]=Object.assign({satis:{},rafLog:[],imha:[]},o[k]);
+    ready=true;setStat(store.yerel?'Bu telefonda kayıtlı':'Kaydedildi');render();
+  }catch(e){
+    setStat('Bağlanılamadı');
+    $('#main').innerHTML='<div class="card"><p>Kayıtlara ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.</p><div class="bar"><button type="button" class="btn pri" data-act="tekrarYukle">Tekrar dene</button></div></div>';
+  }
+}
+
+/* ---------- stok hareketleri ---------- */
+function lotEkle(pid,skt,m){const l=S.lot.find(x=>x.pid===pid&&x.skt===skt);if(l)l.depo=r2(l.depo+m);else S.lot.push({id:uid(),pid,skt,depo:r2(m),giris:today()})}
+function temizle(){S.lot=S.lot.filter(l=>l.depo>0.0001);S.raf=S.raf.filter(r=>r.m>0.0001);S.sip=S.sip.slice(-40)}
+/* satış farkını raftan düşer (en erken RKT önce); eksik kalan miktarı döndürür */
+function raftanDus(pid,d){
+  const rs=S.raf.filter(r=>r.pid===pid).sort((a,b)=>a.rkt<b.rkt?-1:1);
+  if(d<0){if(rs[0])rs[0].m=r2(rs[0].m-d);return 0}
+  for(const r of rs){if(d<=0)break;const x=Math.min(r.m,d);r.m=r2(r.m-x);d=r2(d-x)}
+  return d;
+}
+function lotPill(u,l,t){
+  if(l.skt<t)return{c:'crit',y:'SKT geçti'};
+  const d=diff(enGec(u,l.skt),t);
+  if(d<0)return{c:'crit',y:'Rafa çıkamaz'};
+  if(d===0)return{c:'warn',y:'Son gün bugün'};
+  return{c:d<=2?'warn':'',y:d+' gün kaldı'};
+}
+function rafPill(r,t){const d=diff(r.rkt,t);if(d<0)return{c:'crit',y:'RKT geçti'};if(d===0)return{c:'warn',y:'Bugün kaldır'};return{c:'',y:d+' gün'}}
+
+/* ---------- görünümler ---------- */
+function bos(){return `<div class="card"><h2>Önce ürünlerinizi ekleyin</h2>
+<ol class="adim"><li>Ana değerleri girin: ürün adı, kodu, kutu gramajı ve SKT'den kaç gün öncesine kadar rafa çıkabileceği.</li><li>Gelen malı SKT'siyle depoya alın.</li><li>Rafa çıkarırken RKT'yi buradan okuyun; satış ve imhayı işleyin.</li></ol>
+<div class="bar"><label class="btn"><input type="file" accept=".xlsx,.xls,.csv" class="gizli" data-foto="urunExcel">Excel'den ürün listesi al</label><button type="button" class="btn" data-act="urunYeni">Ürün ekle</button>
+<label class="btn foto"><input type="file" accept="image/*" class="gizli" data-foto="urunListe">Listeyi fotoğraftan ekle</label></div></div>`}
+
+/* Günlük bildirim: her açılışta bugüne göre hesaplanır */
+function bildirim(){
+  const t=today(),yarin=addD(t,1),B={rafa:[],kaldir:[],uyus:[],eksi:[]},sayilmadi=[];
+  for(const u of S.urun){
+    const ls=S.lot.filter(l=>l.pid===u.id).sort((a,b)=>a.skt<b.skt?-1:1),rafVar=rafT(u.id)>0.0001;
+    for(const l of ls){const son=enGec(u,l.skt);
+      if(son<t||l.skt<=t)B.kaldir.push({u,y:`Depoda SKT ${fmtY(l.skt)}, ${mk(u,l.depo)}: rafa çıkış süresi geçti, imha edin`});
+      else if(son<=yarin)B.rafa.push({u,y:`SKT ${fmtY(l.skt)}, ${mk(u,l.depo)}: son rafa çıkış ${son===t?'bugün':'yarın'}`});}
+    const ilk=ls.find(l=>enGec(u,l.skt)>yarin&&l.skt>t);
+    if(!rafVar&&ilk&&!B.rafa.some(z=>z.u===u))B.rafa.push({u,y:`Rafta yok; depoda var. İlk açılacak: SKT ${fmtY(ilk.skt)}`});
+    for(const r of S.raf.filter(r=>r.pid===u.id))if(r.rkt<=t)B.kaldir.push({u,y:`Rafta RKT ${fmtY(r.rkt)}, ${q(r.m)} kg: ${r.rkt<t?'süresi geçti':'bugün kaldırın'}`});
+    const sm=sisM(u.id);
+    if(sm!=null&&!u.sayim&&!(reel(u.id)>0)){if(sm>0)sayilmadi.push(u.ad)}
+    else if(sm!=null&&Math.abs(reel(u.id)-sm)>=0.01){const f=r2(reel(u.id)-sm);B.uyus.push({u,y:`Sistem ${q(sm)} kg, reel ${q(reel(u.id))} kg, fark ${f>0?'+':''}${q(f)} kg`})}
+    if(sm!=null&&sm<0)B.eksi.push({u,y:`Sistem stoğu eksi: ${q(sm)} kg (${fmtY(S.sistem.tarih)})`});
+    const e=S.eksi?.[u.id];if(e)B.eksi.push({u,y:`${fmtY(e.t)} satışı rafta görünenden ${q(e.m)} kg fazla; reel stoğu girin`});
+  }
+  if(sayilmadi.length)B.uyus.push({u:{ad:`${sayilmadi.length} ürün`},y:'sistemde stok var ama reel stok girilmedi. Reel stok sekmesinden girin.'});
+  return B;
+}
+const BBAS=[['rafa','Rafa çıkması gereken','warn'],['kaldir','Raftan kalkması / imha edilmesi gereken',''],['uyus','Stok uyuşmazlığı','warn'],['eksi','Eksiye düşen','']];
+function vBildirim(){const B=bildirim(),top=BBAS.reduce((a,[k])=>a+B[k].length,0);
+  return `<article class="card bild"><header><h2>Günlük bildirim</h2><span class="tot">${fmtY(today())}</span></header>
+  ${top?BBAS.map(([k,b,c])=>B[k].length?`<div class="sec"><h3>${b}<span class="say ${c}">${B[k].length}</span></h3><ul>${B[k].map(x=>`<li><b>${esc(x.u.ad)}</b>: ${esc(x.y)}</li>`).join('')}</ul></div>`:`<div class="sec"><h3>${b}<span class="say ok">0</span></h3></div>`).join('')
+    :'<p class="muted" style="margin:0">Bugün yapılacak bir şey görünmüyor.</p>'}
+  ${top?'<div class="bar"><button type="button" class="btn sm" data-act="bildirimKopyala">Metni kopyala</button></div><p class="small muted" id="kopMsg" style="margin:0"></p>':''}
+  ${S.sistem?`<p class="small muted" style="margin:0">Uyuşmazlık ${fmtY(S.sistem.tarih)} tarihli sistem stoğuna göredir.</p>`:''}</article>`}
+function bildirimMetni(){const B=bildirim();let s=`Meze bölümü günlük bildirim ${fmtY(today())}\n`;
+  for(const [k,b] of BBAS)if(B[k].length)s+=`\n${b} (${B[k].length})\n`+B[k].map(x=>`- ${x.u.ad}: ${x.y}`).join('\n')+'\n';return s}
+
+function vStok(){
+  if(!S.urun.length)return bos();
+  const t=today();
+  const cards=S.urun.map(u=>{
+    const b=esc(birim(u)),top=reel(u.id);
+    /* depo ve raf kalemleri tek listede, SKT eskiden yeniye */
+    const kal=[...S.lot.filter(l=>l.pid===u.id).map(l=>({tur:'L',x:l,skt:l.skt})),...S.raf.filter(r=>r.pid===u.id).map(r=>({tur:'R',x:r,skt:r.skt}))]
+      .sort((a,b)=>a.skt<b.skt?-1:a.skt>b.skt?1:a.tur==='R'?-1:1);
+    const alt=`<div class="small muted">Depo ${mk(u,depo(u.id))} · Raf ${q(rafT(u.id))} kg${yolda(u.id)?' · Yolda '+mk(u,yolda(u.id)):''}</div>`;
+    if(!kal.length)return `<article class="card"><div class="toplam"><h3>${esc(u.ad)}</h3><span class="tot">Stok yok</span></div>${yolda(u.id)?alt:''}${sisSatir(u)}</article>`;
+    const rows=kal.map(({tur,x})=>{
+      if(tur==='L'){const l=x,p=lotPill(u,l,t);return `<li>
+      <div class="r1"><span><span class="tag">DEPO</span>SKT <b class="num">${fmt(l.skt)}</b></span>${qtyH(u,l.depo)}</div>
+      <div class="r2"><span class="pill ${p.c}">${p.y}</span><span class="small muted">Son rafa çıkış ${fmt(enGec(u,l.skt))}</span></div>
+      <div class="r2"><button type="button" class="btn sm pri" data-act="rafAc" data-id="${l.id}">Rafa çıkar</button><button type="button" class="btn sm" data-act="imhaAc" data-src="L:${l.id}">İmha</button><button type="button" class="btn sm" data-act="lotDuzelt" data-id="${l.id}">Düzelt</button></div></li>`}
+      const r=x,p=rafPill(r,t);return `<li>
+      <div class="r1"><span><span class="tag raf">RAF</span>SKT <b class="num">${fmt(r.skt)}</b></span>${qtyH(u,r.m)}</div>
+      <div class="r2"><span class="pill ${p.c}">RKT ${fmt(r.rkt)} · ${p.y}</span><span class="small muted">rafa ${fmt(r.t)}</span></div>
+      <div class="r2"><button type="button" class="btn sm" data-act="imhaAc" data-src="R:${r.id}">İmha</button><button type="button" class="btn sm" data-act="rafDuzelt" data-id="${r.id}">Düzelt</button></div></li>`}).join('');
+    return `<article class="card"><div class="toplam"><h3>${esc(u.ad)}</h3>${qtyH(u,top)}</div>${alt}${sisSatir(u)}<ul class="rows">${rows}</ul></article>`;
+  }).join('');
+  return `${vBildirim()}<div class="bar"><button type="button" class="btn pri" data-act="kabulAc">Mal kabul</button></div>${cards}`;
+}
+function teslimOf(t){const g=pd(t).getDay();return addD(t,g===1?4:g===4?5:4)}
+function ortSatis(pid){
+  const t=today();let top=0,gun=0;
+  for(let i=1;i<=14;i++){const d=addD(t,-i),s=M[d.slice(0,7)]?.satis?.[d];if(s){gun++;top+=+(s[pid]||0)}}
+  return gun?top/gun:null;
+}
+function oneri(u,O){
+  const o=ortSatis(u.id);if(o==null||!okT(O.teslim)||!okT(O.tarih))return 0;
+  const g=pd(O.teslim).getDay(),ufuk=Math.max(0,diff(O.teslim,O.tarih))+(g===2?3:4);
+  const n=o*ufuk-depo(u.id)-rafT(u.id)-yolda(u.id);
+  if(n<=0)return 0;const k=kk(u);return k?r2(Math.ceil(n/k-1e-9)*k):Math.ceil(n*2)/2;
+}
+function vSiparis(){
+  if(!S.urun.length)return bos();
+  C.O??={tarih:today(),teslim:teslimOf(today()),k:{}};const O=C.O;
+  const rows=S.urun.map(u=>{const o=ortSatis(u.id),on=oneri(u,O);return `<div class="orow">
+    <div class="n">${esc(u.ad)} <span class="muted small">(${esc(birim(u))})</span></div>
+    <div class="c">Stok kg<b class="num">${q(depo(u.id)+rafT(u.id))}</b>${kutuI(u,depo(u.id)+rafT(u.id))}</div>
+    <div class="c">Yolda kg<b class="num">${q(yolda(u.id))}</b>${kutuI(u,yolda(u.id))}</div>
+    <div class="c">Ort./gün<b class="num">${o==null?'—':q(o)}</b>${o==null?'':kutuI(u,o)}</div>
+    <div><input id="o-${u.id}" inputmode="decimal" aria-label="${esc(u.ad)} sipariş miktarı, kg" placeholder="${on?'öneri '+q(on):'kg'}" data-c="O.k" data-k="${u.id}" data-hint="oh-${u.id}" data-per="${kk(u)}" value="${esc(O.k[u.id]??'')}"><i id="oh-${u.id}" class="hint">${kk(u)&&num(O.k[u.id])?'≈ '+q(kutuN(u,num(O.k[u.id])))+' kutu':(kk(u)?'kutu '+q(kk(u))+' kg':'')}</i></div></div>`}).join('');
+  const bek=S.sip.filter(s=>s.durum==='bekliyor'),gel=S.sip.filter(s=>s.durum==='geldi').slice(-5).reverse();
+  const kalem=s=>Object.entries(s.k).map(([pid,m])=>`${esc(P(pid)?.ad||s.ad?.[pid]||'?')} ${P(pid)?mk(P(pid),+m):q(+m)+' kg'}`).join(' · ');
+  return `${bek.map(s=>`<article class="card"><header><h3>Yoldaki sipariş</h3><span class="tot">${fmt(s.tarih)} verildi · <b>${fmt(s.teslim)}</b> gelecek</span></header>
+    <p class="small" style="margin:0">${kalem(s)}</p>
+    <div class="bar"><button type="button" class="btn pri sm" data-act="kabulAc" data-id="${s.id}">Mal kabul yap</button><button type="button" class="btn sm danger" data-act="sipSil" data-id="${s.id}">Sil</button></div></article>`).join('')}
+  <article class="card"><header><h3>Yeni sipariş</h3></header>
+    <div class="grid2"><label class="f">Sipariş tarihi<input type="date" id="o-tarih" data-c="O" data-k="tarih" value="${O.tarih}"></label>
+    <label class="f">Teslim tarihi<input type="date" id="o-teslim" data-c="O" data-k="teslim" value="${O.teslim}"></label></div>
+    <p class="small muted" style="margin:0">Sipariş miktarını kg olarak girin; altında kaç kutuya denk geldiği görünür. Öneri tam kutuya yuvarlanır. Ort./gün son 14 günde satış girilen günlerin ortalamasıdır. Öneri, bu teslimattan sonraki teslimata kadar olan ihtiyaçtan stok ve yoldaki miktar düşülerek hesaplanır.</p>
+    ${rows}
+    <div class="bar"><button type="button" class="btn" data-act="oneriDoldur">Önerileri doldur</button><button type="button" class="btn pri" data-act="sipKaydet">Siparişi kaydet</button></div>
+    ${O.msg?`<p class="msg err">${esc(O.msg)}</p>`:''}</article>
+  ${gel.length?`<details><summary>Gelen son siparişler</summary>${gel.map(s=>`<p class="small">${fmt(s.tarih)} → ${fmt(s.gelis||s.teslim)}: ${kalem(s)}</p>`).join('')}</details>`:''}`;
+}
+
+function satisYukle(t){const s=M[t.slice(0,7)]?.satis?.[t]||{};const v={};for(const u of S.urun)if(s[u.id])v[u.id]=String(s[u.id]).replace('.',',');return v}
+function vSatis(){
+  if(!S.urun.length)return bos();
+  if(!C.T){const t=addD(today(),-1);C.T={tarih:t,v:satisYukle(t)}}const T=C.T;
+  const kayitli=!!M[T.tarih.slice(0,7)]?.satis?.[T.tarih];
+  return `<article class="card"><header><h3>Günlük satış</h3><span class="tot">${kayitli?'Bu gün kayıtlı':'Bu gün henüz girilmedi'}</span></header>
+    <div class="grid2"><label class="f">Satış günü<input type="date" id="t-tarih" data-c="T" data-k="tarih" value="${T.tarih}"></label></div>
+    <div class="bar"><label class="btn"><input type="file" accept=".xlsx,.xls,.csv" class="gizli" data-foto="excel">Excel'den al</label></div>
+    ${T.msg?`<p class="msg ${T.mc||''}">${esc(T.msg)}</p>`:''}
+    ${S.urun.map(u=>`<div class="srow"><label for="t-${u.id}">${esc(u.ad)} <span class="muted small">(${esc(birim(u))})</span></label><input id="t-${u.id}" inputmode="decimal" placeholder="0" data-c="T.v" data-k="${u.id}" value="${esc(T.v[u.id]??'')}"></div>`).join('')}
+    <div class="bar"><button type="button" class="btn pri" data-act="satisKaydet">Satışı kaydet</button></div>
+    <p class="small muted" style="margin:0">Satış, raftaki üründen en erken RKT'li olandan başlayarak düşülür.</p></article>`;
+}
+
+function imhaListe(){const a=[];for(const k in M)for(const r of M[k].imha||[])a.push(r);return a.sort((x,y)=>x.t<y.t?1:x.t>y.t?-1:0)}
+function vImha(){
+  if(!S.urun.length)return bos();
+  const l=imhaListe().slice(0,40);
+  return `<div class="bar"><button type="button" class="btn pri" data-act="imhaAc">İmha kaydı gir</button>
+    <label class="btn foto"><input type="file" accept="image/*" class="gizli" data-foto="imha">İmha etiketini oku</label></div>
+  ${l.length?l.map(r=>`<article class="card"><header><h3>${esc(r.ad)}</h3><span class="qty num">${q(r.m)} ${esc(r.b||'')}</span></header>
+    <div class="r2"><span class="pill ${r.neden==='Diğer'?'':'crit'}">${esc(r.neden)}</span><span class="small muted">${fmtY(r.t)}${r.skt?' · SKT '+fmtY(r.skt):''}${r.rkt?' · RKT '+fmtY(r.rkt):''}</span></div>
+    <p class="small" style="margin:0">Teslim alan: <b>${esc(r.teslim||'—')}</b>${r.not?' · '+esc(r.not):''}</p>
+    <div class="r2"><button type="button" class="btn sm danger" data-act="imhaSil" data-id="${r.id}" data-t="${r.t}">Kaydı sil</button></div></article>`).join(''):'<div class="card"><p class="muted" style="margin:0">Henüz imha kaydı yok.</p></div>'}`;
+}
+
+function vUrun(){
+  return `<article class="card"><header><h2>Ana değerler</h2></header>
+    <p class="small muted" style="margin:0">Her ürün için adı, kodu, kutu gramajını ve SKT'den kaç gün öncesine kadar rafa çıkabileceğini girin. Sipariş, stok ve rafa çıkış hesapları bu değerleri kullanır.</p>
+    <div class="bar"><label class="btn"><input type="file" accept=".xlsx,.xls,.csv" class="gizli" data-foto="urunExcel">Excel'den ürün listesi al</label><button type="button" class="btn" data-act="urunYeni">Ürün ekle</button>
+    <label class="btn foto"><input type="file" accept="image/*" class="gizli" data-foto="urunListe">Listeyi fotoğraftan ekle</label>
+    <button type="button" class="btn" data-act="yaziAc">Listeyi yapıştırarak ekle</button></div></article>
+  ${S.urun.map(u=>`<article class="card"><header><h3>${esc(u.ad)}</h3><span class="tot">${u.kod?'Kod '+esc(u.kod):'Kod yok'}</span></header>
+    <div class="ana"><div>Kutu<b class="num">${kk(u)?q(kk(u))+' kg':'—'}</b></div><div>Son rafa çıkış<b class="num">SKT − ${+u.sinir||0} gün</b></div><div>RKT<b class="num">${!u.kural?'—':(u.kural==='skt'?'SKT − ':'Açılış + ')+(+u.gun||0)+' gün'}</b></div></div>
+    ${kk(u)?'':'<p class="msg warn">Kutu gramajı girilmedi; kutu sayıları hesaplanamaz.</p>'}${u.kural?'':'<p class="msg warn">RKT kuralı girilmedi; rafa çıkarırken RKT\'yi etiketten elle girersiniz.</p>'}
+    <div class="r2"><button type="button" class="btn sm" data-act="urunDuzelt" data-id="${u.id}">Düzenle</button></div></article>`).join('')||'<div class="card"><p class="muted" style="margin:0">Henüz ürün yok.</p></div>'}
+  <article class="card"><h3>Yedek</h3>
+    <p class="small muted" style="margin:0">Tüm kayıtları tek dosyaya alır. Telefon değiştirirken ya da uygulamaya geçerken bu dosyayı diğer tarafta "Yedekten yükle" ile açın.</p>
+    <div class="bar"><button type="button" class="btn sm indir" data-act="yedekAl">Yedek al</button><label class="btn sm"><input type="file" accept=".json,application/json" class="gizli" data-foto="yedek">Yedekten yükle</label></div>
+    <p class="small muted" id="yedekMsg" style="margin:0"></p></article>
+  <article class="card indir" style="flex-direction:column"><h3>Kayıtları dışa aktar</h3>
+    <div class="bar"><button type="button" class="btn sm" data-act="csv" data-tur="stok">Stok</button><button type="button" class="btn sm" data-act="csv" data-tur="raf">Raf etiket kayıtları</button><button type="button" class="btn sm" data-act="csv" data-tur="imha">İmha</button><button type="button" class="btn sm" data-act="csv" data-tur="satis">Satış</button></div>
+    <p class="small muted" id="csvMsg" style="margin:0">Dosyalar Excel'de açılan CSV biçimindedir.</p></article>`;
+}
+const sisM=pid=>S.sistem?+(S.sistem.k[pid]||0):null;
+const reel=pid=>r2(depo(pid)+rafT(pid));
+function farkH(u){const s=sisM(u.id);if(s==null)return '';const f=r2(reel(u.id)-s);
+  return `<span class="pill ${Math.abs(f)<0.001?'':'warn'} fark num">Fark ${f>0?'+':''}${q(f)} kg${kk(u)&&Math.abs(f)>=0.001?' · '+(f>0?'+':'')+q(kutuN(u,f))+' kutu':''}</span>`}
+const sisSatir=u=>S.sistem?`<div class="r2 small"><span class="muted">Sistem (${fmtY(S.sistem.tarih)}): <b>${mk(u,sisM(u.id))}</b></span>${farkH(u)}</div>`:'';
+function vReel(){
+  if(!S.urun.length)return bos();
+  const s=S.sistem,farkli=s?S.urun.filter(u=>Math.abs(reel(u.id)-sisM(u.id))>=0.001).length:0;
+  return `<article class="card"><header><h2>Sistem stoğu</h2><span class="tot">${s?fmtY(s.tarih)+' tarihli':'Yüklenmedi'}</span></header>
+    <p class="small muted" style="margin:0">${s?`${Object.keys(s.k).length} ürünün sistem stoğu var. ${farkli} üründe reel stok farklı.`:'Mağaza sisteminden aldığınız stok Excel\'ini yükleyin; her üründe sistem stoğu ile reel stok yan yana görünür.'}</p>
+    <div class="bar"><label class="btn ${s?'':'pri'}"><input type="file" accept=".xlsx,.xls,.csv" class="gizli" data-foto="sistemExcel">Excel'den sistem stoğu al</label></div></article>
+  ${S.urun.map(u=>{const ls=S.lot.filter(l=>l.pid===u.id).sort((a,b)=>a.skt<b.skt?-1:1),rs=S.raf.filter(r=>r.pid===u.id);
+    return `<article class="card"><header><h3>${esc(u.ad)}</h3><span class="tot">${u.sayim?'Sayım '+fmtY(u.sayim):'Sayılmadı'}</span></header>
+    <div class="ana"><div>Sistem${s?' '+fmtY(s.tarih).slice(0,5):''}<b class="num">${s?q(sisM(u.id))+' kg':'—'}</b>${s?kutuI(u,sisM(u.id)):''}</div><div>Reel<b class="num">${q(reel(u.id))} kg</b>${kutuI(u,reel(u.id))}</div><div>SKT'ler<b class="num small">${[...ls.map(l=>fmtY(l.skt).slice(0,5)),...rs.map(r=>'R '+fmtY(r.skt).slice(0,5))].join(', ')||'—'}</b></div></div>
+    <div class="r2">${farkH(u)}<button type="button" class="btn sm pri" data-act="reelAc" data-id="${u.id}">Reel stoğu gir</button></div></article>`}).join('')}`;
+}
+function fSistem(x){const o=sel=>x.bas.map((h,i)=>`<option value="${i}"${i===+sel?' selected':''}>${esc(h||('Sütun '+(i+1)))}</option>`).join('');
+  const s=excelEsle(x);
+  return `<label class="f">Sistemdeki stok tarihi<input type="date" id="ss-t" data-c="sheet" data-k="tarih" value="${esc(x.tarih)}"></label>
+  <label class="f">Ürün adı sütunu<select id="ss-a" data-c="sheet" data-k="ca" data-yenile="1">${o(x.ca)}</select></label>
+  <label class="f">Ürün kodu sütunu<select id="ss-k" data-c="sheet" data-k="ck" data-yenile="1"><option value="-1">Yok</option>${o(x.ck)}</select></label>
+  <label class="f">Stok miktarı (kg) sütunu<select id="ss-m" data-c="sheet" data-k="cm" data-yenile="1">${o(x.cm)}</select></label>
+  <p class="msg">${s.n} ürün eşleşti.${s.yok.length?' Listede olmayanlar: '+esc(s.yok.slice(0,8).join(', '))+(s.yok.length>8?'…':''):''}</p>
+  ${S.urun.filter(u=>s.v[u.id]!=null).slice(0,6).map(u=>`<div class="srow"><span>${esc(u.ad)}</span><b class="num">${mk(u,s.v[u.id])}</b></div>`).join('')}
+  ${mesaj(x)}<div class="bar"><button type="button" class="btn pri" data-act="sistemKaydet"${s.n?'':' disabled'}>Sistem stoğunu kaydet</button></div>`}
+function fReel(x){const u=P(x.pid),k=kk(u);
+  return `<p class="small muted" style="margin:0">${esc(u.ad)} için şu an elinizdeki stoğu SKT'siyle girin. Kaydedince bu ürünün uygulamadaki stoğu girdiğiniz değerlerle değişir.${S.sistem?` Sistem (${fmtY(S.sistem.tarih)}): <b>${mk(u,sisM(u.id))}</b>.`:''}</p>
+  ${x.rows.map((r,i)=>`<div class="krow"><div class="grid2"><label class="f" style="flex:0 1 110px">Yer<select id="rl-y${i}" data-c="sheet.rows.${i}" data-k="yer" data-yenile="1"><option value="D"${r.yer==='D'?' selected':''}>Depo</option><option value="R"${r.yer==='R'?' selected':''}>Raf</option></select></label>
+    ${k?`<label class="f">Kutu<input id="rl-k${i}" inputmode="decimal" data-c="sheet.rows.${i}" data-k="k" data-esle="rl-m${i}" data-per="${k}" value="${esc(r.k)}"></label>`:''}
+    <label class="f">Kg<input id="rl-m${i}" inputmode="decimal" data-c="sheet.rows.${i}" data-k="m" ${k?`data-esle="rl-k${i}" data-per="${k}" data-ters="1"`:''} value="${esc(r.m)}"></label></div>
+    <div class="grid2"><label class="f">SKT<input type="date" id="rl-s${i}" data-c="sheet.rows.${i}" data-k="skt" value="${esc(r.skt)}"></label>
+    ${r.yer==='R'?`<label class="f">RKT${u.kural?' (boşsa hesaplanır)':''}<input type="date" id="rl-r${i}" data-c="sheet.rows.${i}" data-k="rkt" value="${esc(r.rkt)}"></label>`:''}</div>
+    <div class="r2"><button type="button" class="btn sm danger" data-act="reelSatirSil" data-i="${i}">Satırı sil</button></div></div>`).join('')}
+  <div class="bar"><button type="button" class="btn" data-act="reelSatir">SKT ekle</button></div>
+  <p class="r2" style="margin:0">Toplam reel: <b class="num">${mk(u,sum(x.rows,r=>num(r.m)))}</b></p>${mesaj(x)}
+  <div class="bar"><button type="button" class="btn pri" data-act="reelKaydet">Reel stoğu kaydet</button></div>`}
+const V={reel:vReel,stok:vStok,siparis:vSiparis,satis:vSatis,imha:vImha,urun:vUrun};
+function render(){
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===tab));
+  if(ready)$('#main').innerHTML=V[tab]();
+}
+
+/* ---------- alt panel ---------- */
+function ac(baslik,fn,ctx){C.sheet=ctx;sheetFn=fn;$('#sheetT').textContent=baslik;$('#sheetBody').innerHTML=fn(ctx);$('#scrim').classList.add('on')}
+function yenile(){if(C.sheet&&sheetFn)$('#sheetBody').innerHTML=sheetFn(C.sheet)}
+function kapat(){C.sheet=null;sheetFn=null;$('#scrim').classList.remove('on');render()}
+const uOpt=sel=>'<option value="">Ürün seçin</option>'+S.urun.map(u=>`<option value="${u.id}"${u.id===sel?' selected':''}>${esc(u.ad)}</option>`).join('');
+const mesaj=x=>x.msg?`<p class="msg ${x.mc||''}">${esc(x.msg)}</p>`:'';
+
+function fRaf(x){const l=S.lot.find(a=>a.id===x.id),u=P(l.pid);
+  const k=kk(u);
+  return `<p style="margin:0"><b>${esc(u.ad)}</b> · SKT ${fmtY(l.skt)} · depoda ${mk(u,l.depo)}</p>
+  <div class="grid2">${k?`<label class="f">Açılan kutu<input id="rf-k" inputmode="decimal" data-c="sheet" data-k="k" data-esle="rf-m" data-per="${k}" value="${esc(x.k)}"></label>`:''}
+  <label class="f">Rafa çıkan kg<input id="rf-m" inputmode="decimal" data-c="sheet" data-k="m" ${k?`data-esle="rf-k" data-per="${k}" data-ters="1"`:''} value="${esc(x.m)}"></label>
+  <label class="f">Açılış günü<input type="date" id="rf-t" data-c="sheet" data-k="t" value="${x.t}"></label></div>
+  <div class="etiket"><div><span class="small muted">Etikete SKT</span><b class="num">${fmtY(l.skt)}</b></div><div><span class="small muted">Hesaplanan RKT</span><b class="num" id="rf-rkt">${fmtY(x.rkt)}</b></div></div>
+  <label class="f">${u.kural?'RKT (makinenin bastığı farklıysa düzeltin)':'RKT (etiketten girin)'}<input type="date" id="rf-r" data-c="sheet" data-k="rkt" value="${x.rkt}"></label>
+  <p class="small muted" style="margin:0">${esc(kuralYazi(u))}</p>${mesaj(x)}
+  <div class="bar"><button type="button" class="btn pri" data-act="rafKaydet">Rafa çıkışı kaydet</button></div>`}
+
+function fKabul(x){return `${x.sip?`<p class="small muted" style="margin:0">${fmt(x.sip.tarih)} tarihli sipariş. Kutu sayıları siparişteki kg'dan hesaplandı; gelen kutu sayısını ve SKT'yi kontrol edin, gelmeyen satırı silin.</p>`:`<p class="small muted" style="margin:0">Gelen kutu sayısını ve SKT'yi girin; kg kutu gramajından hesaplanır.</p>`}
+  ${x.rows.map((r,i)=>`<div class="krow"><label class="f">Ürün<select id="k-p${i}" data-c="sheet.rows.${i}" data-k="pid" data-yenile="1">${uOpt(r.pid)}</select></label>
+    <div class="grid2">${kk(P(r.pid))?`<label class="f">Gelen kutu<input id="k-k${i}" inputmode="decimal" data-c="sheet.rows.${i}" data-k="k" data-esle="k-m${i}" data-per="${kk(P(r.pid))}" value="${esc(r.k)}"></label>`:''}
+    <label class="f">Kg<input id="k-m${i}" inputmode="decimal" data-c="sheet.rows.${i}" data-k="m" ${kk(P(r.pid))?`data-esle="k-k${i}" data-per="${kk(P(r.pid))}" data-ters="1"`:''} value="${esc(r.m)}"></label>
+    <label class="f">SKT<input type="date" id="k-s${i}" data-c="sheet.rows.${i}" data-k="skt" value="${esc(r.skt)}"></label></div>
+    <div class="r2"><label class="btn sm foto"><input type="file" accept="image/*" class="gizli" data-foto="kabul" data-i="${i}">SKT'yi fotoğraftan oku</label>
+    <button type="button" class="btn sm" data-act="kabulBol" data-i="${i}">Farklı SKT ekle</button><button type="button" class="btn sm danger" data-act="kabulSatirSil" data-i="${i}">Satırı sil</button></div>
+    ${r.not?`<p class="msg warn">${esc(r.not)}</p>`:''}</div>`).join('')}
+  <div class="bar"><button type="button" class="btn" data-act="kabulSatir">Satır ekle</button></div>${mesaj(x)}
+  <div class="bar"><button type="button" class="btn pri" data-act="kabulKaydet"${x.busy?' disabled':''}>Depoya al</button></div>`}
+
+function imhaKaynak(pid){const u=P(pid);if(!u)return[];const b=birim(u);
+  return [...S.lot.filter(l=>l.pid===pid).map(l=>({v:'L:'+l.id,y:`Depo · SKT ${fmtY(l.skt)} · ${q(l.depo)} ${b}`})),
+          ...S.raf.filter(r=>r.pid===pid).map(r=>({v:'R:'+r.id,y:`Raf · RKT ${fmtY(r.rkt)} · ${q(r.m)} ${b}`}))]}
+function fImha(x){const ks=imhaKaynak(x.pid);
+  return `<div class="bar"><label class="btn sm foto"><input type="file" accept="image/*" class="gizli" data-foto="imha">İmha etiketini fotoğraftan oku</label></div>
+  <div class="grid2"><label class="f">İmha günü<input type="date" id="i-t" data-c="sheet" data-k="t" value="${x.t}"></label>
+  <label class="f">Ürün<select id="i-p" data-c="sheet" data-k="pid" data-yenile="1">${uOpt(x.pid)}</select></label></div>
+  <label class="f">Stoktan düşülecek kalem<select id="i-s" data-c="sheet" data-k="src" data-yenile="1"><option value="">Stoktan düşme</option>${ks.map(k=>`<option value="${k.v}"${k.v===x.src?' selected':''}>${esc(k.y)}</option>`).join('')}</select></label>
+  <div class="grid2"><label class="f">Miktar (kg)<input id="i-m" inputmode="decimal" data-c="sheet" data-k="m" value="${esc(x.m)}"></label>
+  <label class="f">Neden<select id="i-n" data-c="sheet" data-k="neden">${['SKT','RKT','Diğer'].map(n=>`<option${n===x.neden?' selected':''}>${n}</option>`).join('')}</select></label></div>
+  <div class="grid2"><label class="f">SKT<input type="date" id="i-skt" data-c="sheet" data-k="skt" value="${esc(x.skt)}"></label>
+  <label class="f">RKT<input type="date" id="i-rkt" data-c="sheet" data-k="rkt" value="${esc(x.rkt)}"></label></div>
+  <label class="f">Teslim alan (kime teslim edildi)<input id="i-k" data-c="sheet" data-k="teslim" value="${esc(x.teslim)}" autocomplete="off"></label>
+  <label class="f">Not<input id="i-not" data-c="sheet" data-k="not" value="${esc(x.not)}"></label>${mesaj(x)}
+  <div class="bar"><button type="button" class="btn pri" data-act="imhaKaydet"${x.busy?' disabled':''}>İmhayı kaydet</button></div>`}
+
+function fUrun(x){return `<label class="f">Ürün adı<input id="u-ad" data-c="sheet" data-k="ad" value="${esc(x.ad)}" autocomplete="off"></label>
+  <div class="grid2"><label class="f">Ürün kodu<input id="u-kod" data-c="sheet" data-k="kod" value="${esc(x.kod)}" autocomplete="off"></label>
+  <label class="f">Kutu gramajı (kg)<input id="u-kutu" inputmode="decimal" placeholder="örn. 1,87" data-c="sheet" data-k="kutu" value="${esc(x.kutu)}"></label></div>
+  <label class="f">SKT'den kaç gün öncesine kadar rafa çıkabilir<input id="u-s" inputmode="numeric" placeholder="örn. 5" data-c="sheet" data-k="sinir" value="${esc(x.sinir)}"></label>
+  <div class="grid2"><label class="f">RKT kuralı<select id="u-k" data-c="sheet" data-k="kural" data-yenile="1"><option value=""${!x.kural?' selected':''}>Bilmiyorum, elle gireceğim</option><option value="acilis"${x.kural==='acilis'?' selected':''}>Açılış günü + gün</option><option value="skt"${x.kural==='skt'?' selected':''}>SKT − gün</option></select></label>
+  ${x.kural?`<label class="f">${x.kural==='skt'?"SKT'den kaç gün önce kalkar":'Açıldıktan sonra rafta kaç gün'}<input id="u-g" inputmode="numeric" data-c="sheet" data-k="gun" value="${esc(x.gun)}"></label>`:''}</div>
+  <details${x.bul?' open':''}><summary>RKT kuralını makinenin etiketinden bul</summary>
+    <p class="small muted">Makinenin bastığı bir etiketteki tarihleri girin.</p>
+    <div class="grid2"><label class="f">Açılış günü<input type="date" id="b-a" data-c="sheet" data-k="ba" data-bul="1" value="${esc(x.ba)}"></label>
+    <label class="f">SKT<input type="date" id="b-s" data-c="sheet" data-k="bs" data-bul="1" value="${esc(x.bs)}"></label>
+    <label class="f">Etiketteki RKT<input type="date" id="b-r" data-c="sheet" data-k="br" data-bul="1" value="${esc(x.br)}"></label></div>
+    <div id="bulSonuc" class="bar" style="margin-top:8px">${bulSonuc(x)}</div></details>${mesaj(x)}
+  <div class="bar"><button type="button" class="btn pri" data-act="urunKaydet">Ürünü kaydet</button>${x.id?`<button type="button" class="btn danger" data-act="urunSil">${x.sil?'Emin misiniz? Sil':'Ürünü sil'}</button>`:''}</div>`}
+function bulSonuc(x){if(!okT(x.ba)||!okT(x.bs)||!okT(x.br))return '';
+  const a=diff(x.br,x.ba),s=diff(x.bs,x.br);
+  return `<button type="button" class="btn sm" data-act="bulUygula" data-kural="acilis" data-gun="${a}">Açılış + ${a} gün</button><button type="button" class="btn sm" data-act="bulUygula" data-kural="skt" data-gun="${s}">SKT − ${s} gün</button>`}
+
+function fLot(x){return `<div class="grid2"><label class="f">${x.tur==='L'?'Depodaki miktar':'Raftaki miktar'}<input id="d-m" inputmode="decimal" data-c="sheet" data-k="m" value="${esc(x.m)}"></label>
+  <label class="f">${x.tur==='L'?'SKT':'RKT'}<input type="date" id="d-t" data-c="sheet" data-k="d" value="${esc(x.d)}"></label></div>
+  <p class="small muted" style="margin:0">Sayım farkını düzeltmek için kullanın. Miktarı 0 yaparsanız kalem silinir.</p>${mesaj(x)}
+  <div class="bar"><button type="button" class="btn pri" data-act="duzeltKaydet">Kaydet</button></div>`}
+
+function fListe(x){return `${mesaj(x)}${x.rows.map((r,i)=>`<div class="krow"><div class="grid2"><label class="f">Ad<input id="l-a${i}" data-c="sheet.rows.${i}" data-k="ad" value="${esc(r.ad)}"></label>
+  <label class="f" style="flex:0 1 120px">Kutu (kg)<input id="l-b${i}" inputmode="decimal" data-c="sheet.rows.${i}" data-k="kutu" value="${esc(r.kutu)}"></label></div>
+  <div class="r2"><span class="small muted">${r.kod?'Kod '+esc(r.kod):''}</span><button type="button" class="btn sm danger" data-act="listeSil" data-i="${i}">Çıkar</button></div></div>`).join('')}
+  ${x.rows.length?`<p class="small muted" style="margin:0">Ekledikten sonra her ürünün rafa çıkış gününü ve RKT kuralını Düzenle ile girin.</p><div class="bar"><button type="button" class="btn pri" data-act="listeKaydet">${x.rows.length} ürünü ekle</button></div>`:''}`}
+
+function fYazi(x){return `<p class="small muted" style="margin:0">Her satıra bir ürün yazın: <b>ad; kod; kutu kg</b>. Kod ve kutu boş kalabilir. Telefonun kamerasındaki "metni kopyala" özelliğiyle listeden kopyalayıp buraya yapıştırabilirsiniz.</p>
+  <label class="f">Liste<textarea id="y-t" data-c="sheet" data-k="t" placeholder="Enginar; 10234; 0,5&#10;Beypazarı yaprak sarma; 10567; 1,87">${esc(x.t)}</textarea></label>${mesaj(x)}
+  <div class="bar"><button type="button" class="btn pri" data-act="yaziOku">Satırları kontrol et</button></div>`}
+function fUrunExcel(x){const yeni=x.rows.filter(r=>!r.uid).length,gun=x.rows.length-yeni;
+  return `<p class="msg">${yeni} yeni ürün eklenecek${gun?`, ${gun} ürünün değerleri güncellenecek`:''}. RKT kuralı listede olmadığı için boş kalır; rafa çıkarırken RKT'yi etiketten girersiniz ya da ürünü düzenleyip eklersiniz.</p>
+  ${x.rows.map(r=>`<div class="krow"><b>${esc(r.ad)}</b><div class="ana"><div>Kod<b class="num">${esc(r.kod||'—')}</b></div><div>Kutu<b class="num">${r.kutu?q(r.kutu)+' kg':'—'}</b></div><div>Son rafa çıkış<b class="num">SKT − ${r.sinir} gün</b></div></div>${r.uid?'<span class="small muted">Listede var, güncellenecek</span>':''}</div>`).join('')}
+  <div class="bar"><button type="button" class="btn pri" data-act="urunExcelKaydet">Ürünleri kaydet</button></div>`}
+const temizAd=s=>String(s).trim().replace(/\s+/g,' ').replace(/\s+KG\.?(?=\s*(\(\d+\))?\s*$)/i,'');
+function fExcel(x){const o=sel=>x.bas.map((h,i)=>`<option value="${i}"${i===+sel?' selected':''}>${esc(h||('Sütun '+(i+1)))}</option>`).join('');
+  const s=excelEsle(x);
+  return `<p class="small muted" style="margin:0">${fmtY(C.T.tarih)} günü için. Sütunları kontrol edin.</p>
+  <label class="f">Ürün adı sütunu<select id="x-a" data-c="sheet" data-k="ca" data-yenile="1">${o(x.ca)}</select></label>
+  <label class="f">Ürün kodu sütunu<select id="x-k" data-c="sheet" data-k="ck" data-yenile="1"><option value="-1">Yok</option>${o(x.ck)}</select></label>
+  <label class="f">Satış miktarı sütunu<select id="x-m" data-c="sheet" data-k="cm" data-yenile="1">${o(x.cm)}</select></label>
+  <p class="msg">${s.n} ürün eşleşti.${s.yok.length?' Listede olmayanlar: '+esc(s.yok.slice(0,8).join(', '))+(s.yok.length>8?'…':''):''}</p>
+  <div class="bar"><button type="button" class="btn pri" data-act="excelUygula"${s.n?'':' disabled'}>Miktarları forma aktar</button></div>`}
+function sutunBul(bas){const b=(list,d,x)=>{for(const re of list){const i=bas.findIndex((h,j)=>j!==x&&re.test(h));if(i>=0)return i}return d};
+  const ck=b([/ürün no|urun no|ürün kod|urun kod|stok kod|malzeme kod|malzeme no|^malzeme$|^kod|barkod/i,/kod|^no$/i],-1);
+  return{ck,ca:b([/ürün ad|urun ad|stok ad|malzeme ad|mal ad|tanım|kısa metin|metin|açıklama/i,/ad/i,/ürün|urun|malzeme/i],ck===0?1:0,ck)}}
+function excelEsle(x){const v={},yok=[];
+  for(const r of x.satir){const ad=norm(temizAd(r[+x.ca]??'')),kod=+x.ck>=0?String(r[+x.ck]??'').trim():'',m=num(r[+x.cm]);
+    if(!ad&&!kod||!m)continue;
+    const u=S.urun.find(u=>(kod&&u.kod&&String(u.kod).trim()===kod)||(ad&&norm(u.ad)===ad))||S.urun.find(u=>ad.length>3&&(norm(u.ad).includes(ad)||ad.includes(norm(u.ad))));
+    if(u)v[u.id]=r2((v[u.id]||0)+m);else if(r[+x.ca])yok.push(String(r[+x.ca]));}
+  return{v,n:Object.keys(v).length,yok:[...new Set(yok)]}}
+
+/* ---------- fotoğraf okuma ---------- */
+const HATA={
+  yok:'Fotoğraf okuma bu görünümde kullanılamıyor. Sayfayı Claude uygulamasında ya da claude.ai\'de, oturum açıkken açın.',
+  images_unavailable:'Bu görünümde fotoğraf Claude\'a gönderilemiyor. Sayfayı claude.ai\'de ya da güncel Claude uygulamasında açın.',
+  not_granted:'Claude\'u kullanma izni verilmedi. Sayfayı kapatıp yeniden açın ve izin sorusuna "İzin ver" deyin.',
+  sampling_disabled:'Hesabınızda bu özellik kapalı.',
+  rate_limited:'Çok sık denendi ya da kullanım sınırına ulaşıldı; biraz sonra tekrar deneyin.',
+  image_rejected:'Fotoğraf biçimi kabul edilmedi. Ekran görüntüsü alıp onu seçmeyi deneyin.',
+  invalid_json:'Fotoğraftaki yazı okunamadı; daha yakından, düz ve net bir fotoğraf deneyin.',
+  empty_completion:'Fotoğraftan bir şey okunamadı; daha net bir fotoğraf deneyin.',
+  session_expired:'Oturumun süresi doldu; yeniden giriş yapın.',
+  refused:'Bu fotoğraf işlenemedi.',
+  prompt_too_large:'Fotoğraf çok büyük; daha küçük bir fotoğraf deneyin.'};
+const hataYazi=e=>(HATA[e?.code]||'Fotoğraf okunamadı; tekrar deneyin ya da elle girin.')+(e?.code&&e.code!=='yok'?' (kod: '+e.code+')':'');
+/* Telefon fotoğrafını küçültüp JPEG'e çevirir; tarayıcı çözemezse dosyayı olduğu gibi gönderir */
+async function hazirla(f){
+  try{
+    const bm=await createImageBitmap(f,{imageOrientation:'from-image'});
+    const s=Math.min(1,2000/Math.max(bm.width,bm.height)),c=document.createElement('canvas');
+    c.width=Math.round(bm.width*s);c.height=Math.round(bm.height*s);
+    c.getContext('2d').drawImage(bm,0,0,c.width,c.height);bm.close?.();
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.88));return b||f;
+  }catch(e){return f}
+}
+const urunJson=()=>JSON.stringify(S.urun.map(u=>({id:u.id,ad:u.ad,kod:u.kod||''})));
+const TARIH=`Bugünün tarihi ${today()}. Etiketlerde tarih gün.ay.yıl sırasındadır; tarihleri "YYYY-AA-GG" olarak ver. SKT etikette "SKT", "TETT", "S.T.T.", "Son Tüketim Tarihi" ya da "EXP" olarak geçebilir; üretim tarihini (ÜT) SKT sanma. Okuyamadığın ya da emin olmadığın alanı null bırak.`;
+async function oku(f,p){if(!sample||fotoVar===false)throw{code:sample?'images_unavailable':'yok'};return sample.json(p,{images:[await hazirla(f)],cache:false})}
+const F={
+  async kabul(f,el){const x=C.sheet,r=x.rows[+el.dataset.i];x.busy=true;r.not='Fotoğraf okunuyor…';yenile();
+    try{const j=await oku(f,`Fotoğrafta bir gıda ürününün paketi, kolisi ya da etiketi var. ${TARIH}\nÜrün listesi: ${urunJson()}\nYalnızca şu JSON nesnesiyle yanıt ver: {"pid": listeden eşleşen ürünün id'si ya da null, "urunAdi": etikette okunan ürün adı ya da null, "skt": tarih ya da null}`);
+      if(C.sheet!==x)return;
+      if(okT(j?.skt))r.skt=j.skt;if(!r.pid&&P(j?.pid)){r.pid=j.pid;const k=kk(P(r.pid));if(k&&num(r.k))r.m=fmtN(num(r.k)*k)}
+      r.not=okT(j?.skt)?`Okunan SKT ${fmtY(j.skt)}${j.urunAdi?' ('+j.urunAdi+')':''}. Paketle karşılaştırıp kontrol edin.`:'SKT okunamadı; elle girin.';
+    }catch(e){if(C.sheet!==x)return;r.not=hataYazi(e)}
+    x.busy=false;yenile()},
+  async imha(f){if(!C.sheet||sheetFn!==fImha)A.imhaAc();const x=C.sheet;x.busy=true;x.msg='Fotoğraf okunuyor…';x.mc='';yenile();
+    try{const j=await oku(f,`Fotoğrafta bir marketin imha etiketi ya da imha tutanağı var. ${TARIH}\nÜrün listesi: ${urunJson()}\nYalnızca şu JSON nesnesiyle yanıt ver: {"pid": listeden eşleşen ürünün id'si ya da null, "urunAdi": okunan ürün adı ya da null, "skt": tarih ya da null, "rkt": raf kaldırma tarihi ya da null, "miktar": sayı ya da null, "tarih": imha tarihi ya da null, "neden": "SKT" ya da "RKT" ya da "Diğer" ya da null, "teslim": teslim alan kişi ya da null}`);
+      if(C.sheet!==x)return;
+      if(P(j?.pid))x.pid=j.pid;if(okT(j?.skt))x.skt=j.skt;if(okT(j?.rkt))x.rkt=j.rkt;if(okT(j?.tarih))x.t=j.tarih;
+      if(j?.miktar)x.m=String(j.miktar).replace('.',',');if(['SKT','RKT','Diğer'].includes(j?.neden))x.neden=j.neden;if(j?.teslim)x.teslim=String(j.teslim);
+      const k=imhaKaynak(x.pid).find(k=>(x.skt&&k.y.includes('SKT '+fmtY(x.skt)))||(x.rkt&&k.y.includes('RKT '+fmtY(x.rkt))));if(k)x.src=k.v;
+      x.msg=`Etiket okundu${j?.urunAdi?' ('+j.urunAdi+')':''}. Alanları etiketle karşılaştırıp kontrol edin.`;x.mc='warn';
+    }catch(e){if(C.sheet!==x)return;x.msg=hataYazi(e);x.mc='err'}
+    x.busy=false;yenile()},
+  async urunListe(f){const x={rows:[],msg:'Liste okunuyor. Uzun listelerde bir dakikayı bulabilir; sayfayı kapatmayın.'};ac('Fotoğraftan ürün ekle',fListe,x);
+    try{const j=await oku(f,`Fotoğrafta bir marketin meze bölümüne ait ürün listesi var. Listedeki her ürün için bir nesne içeren JSON dizisiyle yanıt ver, başka metin yazma: [{"ad": ürün adı, "kod": ürün/stok kodu ya da "", "kutu": kutu/koli gramajı kg cinsinden sayı ya da null}]. Başlık satırlarını ve toplamları alma.`);
+      if(C.sheet!==x)return;
+      const var_=new Set(S.urun.map(u=>norm(u.ad)));
+      x.rows=(Array.isArray(j)?j:[]).filter(r=>r&&r.ad&&!var_.has(norm(r.ad))).map(r=>({ad:String(r.ad),kod:String(r.kod||''),kutu:+r.kutu>0?fmtN(+r.kutu):''}));
+      x.msg=x.rows.length?'Okunan ürünleri kontrol edin; yanlış olanı düzeltin ya da çıkarın.':'Fotoğrafta yeni ürün bulunamadı.';x.mc=x.rows.length?'warn':'err';
+    }catch(e){if(C.sheet!==x)return;x.msg=hataYazi(e);x.mc='err'}
+    yenile()},
+  async urunExcel(f){
+    const hata=m=>{ac("Excel'den ürün listesi",x=>mesaj(x),{msg:m,mc:'err'})};
+    try{if(!window.XLSX)throw 0;
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      const h=rows.findIndex((r,i)=>i<20&&r.some(c=>/ad|ürün|urun/i.test(String(c))));
+      if(h<0)return hata("Dosyada ürün adı sütunu bulunamadı. İlk satırda 'Ürün Adı' gibi bir başlık olmalı.");
+      const bas=rows[h].map(c=>String(c).trim()),bul=re=>bas.findIndex(b=>re.test(b));
+      const ca=bul(/ad/i),ck=bul(/no|kod|barkod/i),cg=bul(/gün|gun/i),cb=bul(/ambalaj|gram|gr|kutu|koli/i);
+      if(ca<0)return hata("Dosyada ürün adı sütunu bulunamadı.");
+      const out=[];
+      for(const r of rows.slice(h+1)){const ad=temizAd(r[ca]||''),kod=ck>=0?String(r[ck]).trim():'';
+        if(!ad||/^toplam/i.test(ad)||/^toplam/i.test(kod))continue;
+        let kutu=cb>=0?num(r[cb]):0;if(kutu>20)kutu=kutu/1000;
+        const u=S.urun.find(u=>(kod&&u.kod&&String(u.kod)===kod)||norm(u.ad)===norm(ad));
+        out.push({uid:u?.id||'',ad,kod,kutu:Math.round(kutu*1000)/1000,sinir:cg>=0?Math.max(0,Math.round(num(r[cg]))):(u?.sinir||0)});}
+      if(!out.length)return hata('Dosyada ürün satırı bulunamadı.');
+      ac("Excel'den ürün listesi",fUrunExcel,{rows:out});
+    }catch(e){hata('Dosya okunamadı. Ürün listesinin Excel dosyasını (.xlsx) seçin.')}},
+  async sistemExcel(f){
+    try{if(!window.XLSX)throw 0;
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      let h=rows.findIndex((r,i)=>i<20&&r.filter(c=>String(c).trim()).length>=2&&r.some(c=>/ürün|urun|stok|malzeme|mal ad|miktar|ad/i.test(String(c))));if(h<0)h=0;
+      const bas=(rows[h]||[]).map(c=>String(c).trim());if(bas.length<2)throw 0;
+      const sc=sutunBul(bas),cm=[/stok mik|mevcut|eldeki|bakiye|kalan/i,/stok/i,/miktar|kg/i].reduce((a,re)=>a>=0?a:bas.findIndex((b,i)=>re.test(b)&&i!==sc.ca&&i!==sc.ck),-1);
+      ac("Sistem stoğunu al",fSistem,{bas,satir:rows.slice(h+1),...sc,cm:cm>=0?cm:Math.min(2,bas.length-1),tarih:''});
+    }catch(e){ac("Sistem stoğunu al",x=>mesaj(x),{msg:'Dosya okunamadı. Sistemden aldığınız stok Excel dosyasını (.xlsx) seçin.',mc:'err'})}},
+  async yedek(f){
+    let y;try{y=JSON.parse(await f.text())}catch(e){}
+    if(!y||y.uygulama!=='meze-defteri'||!Array.isArray(y.ana?.urun))return ac('Yedekten yükle',x=>mesaj(x),{msg:'Bu dosya bir Meze Defteri yedeği değil.',mc:'err'});
+    ac('Yedekten yükle',x=>`<p class="msg warn">${fmtY(x.y.tarih)} tarihli yedek: ${x.y.ana.urun.length} ürün, ${(x.y.ana.lot||[]).length+(x.y.ana.raf||[]).length} stok kalemi. Yüklerseniz bu cihazdaki kayıtların yerini alır.</p><div class="bar"><button type="button" class="btn pri" data-act="yedekYukle">Yedeği yükle</button></div>`,{y})},
+  async excel(f){const T=C.T;
+    try{if(!window.XLSX)throw 0;
+      const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      let h=rows.findIndex((r,i)=>i<20&&r.filter(c=>String(c).trim()).length>=2&&r.some(c=>/ürün|urun|stok|malzeme|mal ad|miktar/i.test(String(c))));if(h<0)h=0;
+      const bas=(rows[h]||[]).map(c=>String(c).trim()),bul=(re,d)=>{const i=bas.findIndex(b=>re.test(b));return i<0?d:i};
+      if(bas.length<2)throw 0;
+      ac("Excel'den satış al",fExcel,{bas,satir:rows.slice(h+1),...sutunBul(bas),cm:bul(/miktar|satış mik|satis mik|net mik|adet|kg/i,Math.min(1,bas.length-1))});
+    }catch(e){T.msg='Dosya okunamadı. Sistemden aldığınız Excel dosyasını (.xlsx) seçin.';T.mc='err';render()}}
+};
+
+/* ---------- eylemler ---------- */
+const A={
+  kapat,
+  tekrarKaydet(){setStat('Kaydediliyor…');flush()},
+  tekrarYukle(){yukle()},
+  /* ürün */
+  urunYeni(){ac('Ürün ekle',fUrun,{ad:'',kod:'',kutu:'',sinir:'',kural:'acilis',gun:''})},
+  urunDuzelt(el){const u=P(el.dataset.id);ac('Ürünü düzenle',fUrun,{...u,kutu:kk(u)?fmtN(kk(u)):'',sinir:String(u.sinir??''),gun:String(u.gun??'')})},
+  urunKaydet(){const x=C.sheet,ad=x.ad.trim();
+    if(!ad){x.msg='Ürün adını yazın.';x.mc='err';return yenile()}
+    if(String(x.sinir).trim()===''){x.msg="SKT'den kaç gün öncesine kadar rafa çıkabileceğini yazın.";x.mc='err';return yenile()}
+    if(x.kural&&String(x.gun).trim()===''){x.msg='RKT kuralı için gün sayısını yazın.';x.mc='err';return yenile()}
+    const v={ad,kod:String(x.kod||'').trim(),kutu:num(x.kutu)>0?Math.round(num(x.kutu)*1000)/1000:0,sinir:Math.max(0,Math.round(num(x.sinir))),kural:x.kural||'',gun:x.kural?Math.max(0,Math.round(num(x.gun))):''};
+    if(x.id)Object.assign(P(x.id),v);else S.urun.push({id:uid(),...v});
+    S.urun.sort((a,b)=>a.ad.localeCompare(b.ad,'tr'));save('ana');kapat()},
+  urunSil(){const x=C.sheet;
+    if(depo(x.id)+rafT(x.id)>0||yolda(x.id)>0){x.msg='Stoğu ya da yolda siparişi olan ürün silinemez.';x.mc='err';return yenile()}
+    if(!x.sil){x.sil=true;return yenile()}
+    S.urun=S.urun.filter(u=>u.id!==x.id);save('ana');kapat()},
+  bulUygula(el){const x=C.sheet;x.kural=el.dataset.kural;x.gun=el.dataset.gun;x.bul=true;yenile()},
+  urunExcelKaydet(){for(const r of C.sheet.rows){const u=P(r.uid);
+      if(u)Object.assign(u,{kod:r.kod||u.kod,kutu:r.kutu||u.kutu||0,sinir:r.sinir});
+      else S.urun.push({id:uid(),ad:r.ad,kod:r.kod,kutu:r.kutu,sinir:r.sinir,kural:'',gun:''});}
+    S.urun.sort((a,b)=>a.ad.localeCompare(b.ad,'tr'));save('ana');tab='urun';kapat()},
+  yaziAc(){ac('Listeyi yapıştırarak ekle',fYazi,{t:''})},
+  yaziOku(){const x=C.sheet,var_=new Set(S.urun.map(u=>norm(u.ad))),rows=[];
+    for(const sat of x.t.split(/\r?\n/)){const s=sat.trim();if(!s)continue;
+      let p=s.split(/\s*[;\t|]\s*/);
+      if(p.length===1){const m=s.match(/^(.*?)\s+(\d{3,})?\s*(\d+(?:[.,]\d+)?)?\s*(?:kg)?$/i);if(m&&(m[2]||m[3]))p=[m[1],m[2]||'',m[3]||''];}
+      const ad=(p[0]||'').trim();if(!ad||var_.has(norm(ad)))continue;
+      rows.push({ad,kod:(p[1]||'').trim(),kutu:num(p[2])>0?fmtN(num(p[2])):''});}
+    if(!rows.length){x.msg='Eklenecek yeni ürün bulunamadı. Her satıra bir ürün yazın.';x.mc='err';return yenile()}
+    ac('Ürünleri kontrol et',fListe,{rows,msg:'Satırları kontrol edin; yanlış olanı düzeltin ya da çıkarın.',mc:'warn'})},
+  listeSil(el){C.sheet.rows.splice(+el.dataset.i,1);yenile()},
+  listeKaydet(){for(const r of C.sheet.rows)if(r.ad.trim())S.urun.push({id:uid(),ad:r.ad.trim(),kod:r.kod,kutu:num(r.kutu)>0?Math.round(num(r.kutu)*1000)/1000:0,sinir:0,kural:'',gun:''});
+    S.urun.sort((a,b)=>a.ad.localeCompare(b.ad,'tr'));save('ana');tab='urun';kapat()},
+  /* mal kabul */
+  kabulAc(el){const s=el?.dataset.id?S.sip.find(a=>a.id===el.dataset.id):null;
+    const rows=s?Object.entries(s.k).filter(([p])=>P(p)).map(([pid,m])=>{const k=kk(P(pid));if(!k)return{pid,k:'',m:fmtN(+m),skt:''};const n=Math.ceil(+m/k-1e-9);return{pid,k:String(n),m:fmtN(n*k),skt:''}}):[{pid:'',k:'',m:'',skt:''}];
+    ac('Mal kabul',fKabul,{sip:s,rows})},
+  kabulSatir(){C.sheet.rows.push({pid:'',k:'',m:'',skt:''});yenile()},
+  kabulBol(el){const r=C.sheet.rows[+el.dataset.i];C.sheet.rows.splice(+el.dataset.i+1,0,{pid:r.pid,k:'',m:'',skt:''});yenile()},
+  kabulSatirSil(el){C.sheet.rows.splice(+el.dataset.i,1);yenile()},
+  kabulKaydet(){const x=C.sheet,dolu=x.rows.filter(r=>r.pid||num(r.m)||r.skt);
+    if(!dolu.length){x.msg='En az bir ürün girin.';x.mc='err';return yenile()}
+    if(dolu.some(r=>!P(r.pid)||num(r.m)<=0||!okT(r.skt))){x.msg='Her satırda ürün, kutu ya da kg ve SKT dolu olmalı.';x.mc='err';return yenile()}
+    for(const r of dolu)lotEkle(r.pid,r.skt,num(r.m));
+    if(x.sip){x.sip.durum='geldi';x.sip.gelis=today()}
+    temizle();save('ana');tab='stok';kapat()},
+  /* rafa çıkış */
+  rafAc(el){const l=S.lot.find(a=>a.id===el.dataset.id),u=P(l.pid),t=today();
+    const k=kk(u),bir=k&&l.depo>=k-0.0001;ac('Rafa çıkar',fRaf,{id:l.id,k:bir?'1':'',m:fmtN(bir?k:l.depo),t,rkt:rktHesap(u,l.skt,t)})},
+  rafKaydet(){const x=C.sheet,l=S.lot.find(a=>a.id===x.id),u=P(l.pid),m=num(x.m);
+    if(m<=0||m>l.depo+0.0001){x.msg=`Miktar 0 ile ${q(l.depo)} arasında olmalı.`;x.mc='err';return yenile()}
+    if(!okT(x.t)||!okT(x.rkt)){x.msg='Açılış günü ve RKT dolu olmalı.';x.mc='err';return yenile()}
+    if(x.rkt>l.skt){x.msg="RKT, SKT'den sonra olamaz.";x.mc='err';return yenile()}
+    l.depo=r2(l.depo-m);S.raf.push({id:uid(),pid:u.id,skt:l.skt,t:x.t,rkt:x.rkt,m});
+    ay(x.t).rafLog.push({t:x.t,ad:u.ad,b:birim(u),skt:l.skt,rkt:x.rkt,m});
+    temizle();save('ana',ayKey(x.t));kapat()},
+  /* düzeltme */
+  lotDuzelt(el){const l=S.lot.find(a=>a.id===el.dataset.id);ac('Depo kalemini düzelt',fLot,{tur:'L',id:l.id,m:String(l.depo).replace('.',','),d:l.skt})},
+  rafDuzelt(el){const r=S.raf.find(a=>a.id===el.dataset.id);ac('Raf kalemini düzelt',fLot,{tur:'R',id:r.id,m:String(r.m).replace('.',','),d:r.rkt})},
+  duzeltKaydet(){const x=C.sheet;if(!okT(x.d)||num(x.m)<0){x.msg='Miktar ve tarih geçerli olmalı.';x.mc='err';return yenile()}
+    if(x.tur==='L'){const l=S.lot.find(a=>a.id===x.id);l.depo=r2(num(x.m));l.skt=x.d}else{const r=S.raf.find(a=>a.id===x.id);r.m=r2(num(x.m));r.rkt=x.d}
+    temizle();save('ana');kapat()},
+  /* sipariş */
+  oneriDoldur(){for(const u of S.urun){const n=oneri(u,C.O);if(n&&!String(C.O.k[u.id]??'').trim())C.O.k[u.id]=String(n).replace('.',',')}render()},
+  sipKaydet(){const O=C.O,k={},ad={};for(const u of S.urun){const m=num(O.k[u.id]);if(m>0){k[u.id]=m;ad[u.id]=u.ad}}
+    if(!Object.keys(k).length){O.msg='En az bir ürüne miktar yazın.';return render()}
+    if(!okT(O.tarih)||!okT(O.teslim)||O.teslim<O.tarih){O.msg='Sipariş ve teslim tarihlerini kontrol edin.';return render()}
+    S.sip.push({id:uid(),tarih:O.tarih,teslim:O.teslim,durum:'bekliyor',k,ad});C.O=null;save('ana');render()},
+  sipSil(el){if(el.dataset.emin!=='1'){el.dataset.emin='1';el.textContent='Emin misiniz? Sil';return}
+    S.sip=S.sip.filter(s=>s.id!==el.dataset.id);save('ana');render()},
+  /* satış */
+  satisKaydet(){const T=C.T;if(!okT(T.tarih)){T.msg='Satış gününü seçin.';T.mc='err';return render()}
+    const a=ay(T.tarih),eski=a.satis[T.tarih]||{},yeni={},eksik=[];
+    for(const u of S.urun){const m=r2(num(T.v[u.id])),d=r2(m-(+eski[u.id]||0));if(m>0)yeni[u.id]=m;
+      if(d){const k=raftanDus(u.id,d);if(k>0.0001){eksik.push(`${u.ad} ${q(k)}`);S.eksi[u.id]={t:T.tarih,m:r2(k)}}}}
+    for(const p in eski)if(!P(p))yeni[p]=eski[p];
+    a.satis[T.tarih]=yeni;temizle();save('ana',ayKey(T.tarih));
+    T.msg=eksik.length?'Kaydedildi. Rafta görünen miktardan fazla satış var: '+eksik.join(', ')+'. Raf stoğunu kontrol edin.':'Satış kaydedildi; raf stoğundan düşüldü.';T.mc=eksik.length?'warn':'';render()},
+  sistemKaydet(){const x=C.sheet;if(!okT(x.tarih)){x.msg='Sistemdeki stok tarihini girin.';x.mc='err';return yenile()}
+    if(x.tarih>today()){x.msg='Stok tarihi bugünden sonra olamaz.';x.mc='err';return yenile()}
+    S.sistem={tarih:x.tarih,k:excelEsle(x).v,yuklendi:today()};save('ana');tab='reel';kapat()},
+  reelAc(el){const pid=el.dataset.id,u=P(pid),k=kk(u),kt=m=>k?fmtN(Math.round(m/k*10)/10):'';
+    const rows=[...S.lot.filter(l=>l.pid===pid).map(l=>({yer:'D',k:kt(l.depo),m:fmtN(l.depo),skt:l.skt,rkt:''})),...S.raf.filter(r=>r.pid===pid).map(r=>({yer:'R',k:kt(r.m),m:fmtN(r.m),skt:r.skt,rkt:r.rkt}))];
+    if(!rows.length)rows.push({yer:'D',k:'',m:'',skt:'',rkt:''});ac('Reel stok',fReel,{pid,rows})},
+  reelSatir(){C.sheet.rows.push({yer:'D',k:'',m:'',skt:'',rkt:''});yenile()},
+  reelSatirSil(el){C.sheet.rows.splice(+el.dataset.i,1);yenile()},
+  reelKaydet(){const x=C.sheet,u=P(x.pid),t=today(),dolu=x.rows.filter(r=>num(r.m)||r.skt);
+    for(const r of dolu){if(num(r.m)<=0||!okT(r.skt)){x.msg='Her satırda miktar ve SKT dolu olmalı. Boş satırları silin.';x.mc='err';return yenile()}
+      if(r.yer==='R'){if(!okT(r.rkt))r.rkt=rktHesap(u,r.skt,t);if(!okT(r.rkt)){x.msg="Raftaki ürün için RKT'yi etiketten girin.";x.mc='err';return yenile()}}}
+    S.lot=S.lot.filter(l=>l.pid!==u.id);S.raf=S.raf.filter(r=>r.pid!==u.id);
+    for(const r of dolu){if(r.yer==='D')lotEkle(u.id,r.skt,num(r.m));else S.raf.push({id:uid(),pid:u.id,skt:r.skt,t,rkt:r.rkt,m:r2(num(r.m))})}
+    u.sayim=t;delete S.eksi[u.id];temizle();save('ana');kapat()},
+  async bildirimKopyala(){const m=$('#kopMsg');try{await navigator.clipboard.writeText(bildirimMetni());if(m)m.textContent='Kopyalandı; mesaj olarak yapıştırabilirsiniz.'}catch(e){if(m)m.textContent='Kopyalanamadı.'}},
+  async yedekAl(){const m=$('#yedekMsg');
+    try{await dosyaVer(`meze-yedek-${today()}.json`,JSON.stringify({uygulama:'meze-defteri',surum:1,tarih:today(),ana:S,aylar:M}),'application/json');if(m)m.textContent='Yedek dosyası hazırlandı.'}
+    catch(e){if(e?.code!=='declined'&&m)m.textContent='Yedek alınamadı; tekrar deneyin.'}},
+  yedekYukle(){const y=C.sheet.y;S=Object.assign({urun:[],lot:[],raf:[],sip:[],sistem:null,eksi:{}},y.ana);M={};
+    for(const k in y.aylar||{})M[k]=Object.assign({satis:{},rafLog:[],imha:[]},y.aylar[k]);
+    save('ana',...Object.keys(M).map(k=>'ay-'+k));tab='stok';kapat()},
+  excelUygula(){const s=excelEsle(C.sheet),T=C.T;for(const p in s.v)T.v[p]=String(s.v[p]).replace('.',',');
+    T.msg=`${s.n} ürünün miktarı aktarıldı. Kontrol edip kaydedin.`;T.mc='';kapat()},
+  /* imha */
+  imhaAc(el){const x={t:today(),pid:'',src:el?.dataset.src||'',m:'',neden:'SKT',skt:'',rkt:'',teslim:'',not:''};
+    if(x.src)imhaSrc(x);ac('İmha kaydı',fImha,x)},
+  imhaKaydet(){const x=C.sheet,u=P(x.pid),m=num(x.m);
+    if(!u||m<=0||!okT(x.t)){x.msg='Ürün, miktar ve imha günü dolu olmalı.';x.mc='err';return yenile()}
+    if(!x.teslim.trim()){x.msg='Ürünün kime teslim edildiğini yazın.';x.mc='err';return yenile()}
+    const [tur,id]=x.src?x.src.split(':'):[];const k=tur==='L'?S.lot.find(a=>a.id===id):tur==='R'?S.raf.find(a=>a.id===id):null;
+    if(k){const var_=tur==='L'?k.depo:k.m;if(m>var_+0.0001){x.msg=`Seçilen kalemde ${q(var_)} var; miktarı düzeltin.`;x.mc='err';return yenile()}
+      if(tur==='L')k.depo=r2(k.depo-m);else k.m=r2(k.m-m)}
+    ay(x.t).imha.push({id:uid(),t:x.t,pid:u.id,ad:u.ad,b:birim(u),m,neden:x.neden,skt:x.skt||'',rkt:x.rkt||'',teslim:x.teslim.trim(),not:x.not.trim(),src:k?tur:''});
+    temizle();save('ana',ayKey(x.t));tab='imha';kapat()},
+  imhaSil(el){if(el.dataset.emin!=='1'){el.dataset.emin='1';el.textContent='Emin misiniz? Sil ve stoğa geri al';return}
+    const a=ay(el.dataset.t),r=a.imha.find(i=>i.id===el.dataset.id);if(!r)return;
+    if(r.src==='L'&&okT(r.skt)&&P(r.pid))lotEkle(r.pid,r.skt,r.m);
+    if(r.src==='R'&&okT(r.rkt)&&P(r.pid)){const k=S.raf.find(z=>z.pid===r.pid&&z.rkt===r.rkt);if(k)k.m=r2(k.m+r.m);else S.raf.push({id:uid(),pid:r.pid,skt:r.skt,t:r.t,rkt:r.rkt,m:r.m})}
+    a.imha=a.imha.filter(i=>i.id!==r.id);save('ana',ayKey(r.t));render()},
+  /* dışa aktarım */
+  async csv(el){const n=x=>String(x).replace('.',','),tur=el.dataset.tur;let r;
+    if(tur==='stok')r=[['Ürün','Kod','Yer','SKT','RKT','Son rafa çıkış','Kg','Kutu'],...S.lot.map(l=>{const u=P(l.pid);return[u?.ad,u?.kod,'Depo',fmtY(l.skt),'',u?fmtY(enGec(u,l.skt)):'',n(l.depo),kk(u)?n(kutuN(u,l.depo)):'']}),...S.raf.map(x=>{const u=P(x.pid);return[u?.ad,u?.kod,'Raf',fmtY(x.skt),fmtY(x.rkt),'',n(x.m),kk(u)?n(kutuN(u,x.m)):'']})];
+    if(tur==='raf'){r=[['Rafa çıkış','Ürün','SKT','RKT','Miktar','Birim']];for(const k of Object.keys(M).sort())for(const x of M[k].rafLog||[])r.push([fmtY(x.t),x.ad,fmtY(x.skt),fmtY(x.rkt),n(x.m),x.b])}
+    if(tur==='imha'){r=[['İmha günü','Ürün','Miktar','Birim','Neden','SKT','RKT','Teslim alan','Not']];for(const x of imhaListe().reverse())r.push([fmtY(x.t),x.ad,n(x.m),x.b,x.neden,fmtY(x.skt),fmtY(x.rkt),x.teslim,x.not])}
+    if(tur==='satis'){r=[['Gün','Ürün','Miktar']];for(const k of Object.keys(M).sort())for(const d of Object.keys(M[k].satis||{}).sort())for(const p in M[k].satis[d])r.push([fmtY(d),P(p)?.ad||p,n(M[k].satis[d][p])])}
+    const data='﻿'+r.map(s=>s.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    try{await dosyaVer(`meze-${tur}-${today()}.csv`,data,'text/csv')}catch(e){if(e?.code!=='declined'){const m=$('#csvMsg');if(m)m.textContent='Dosya kaydedilemedi; biraz sonra tekrar deneyin.'}}}
+};
+function imhaSrc(x){const [tur,id]=x.src.split(':');
+  if(tur==='L'){const l=S.lot.find(a=>a.id===id);if(l){x.pid=l.pid;x.skt=l.skt;x.rkt='';x.m=String(l.depo).replace('.',',');x.neden=l.skt<=today()?'SKT':'Diğer'}}
+  if(tur==='R'){const r=S.raf.find(a=>a.id===id);if(r){x.pid=r.pid;x.skt=r.skt;x.rkt=r.rkt;x.m=String(r.m).replace('.',',');x.neden='RKT'}}}
+
+/* ---------- olaylar ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;return render()}
+  const a=e.target.closest('[data-act]');if(a&&A[a.dataset.act])return A[a.dataset.act](a);
+  if(e.target.id==='scrim')kapat();
+});
+function bagla(el){
+  if(!el.dataset||!el.dataset.k||!el.dataset.c)return false;
+  const o=el.dataset.c.split('.').reduce((x,k)=>x?.[k],C);if(!o)return false;o[el.dataset.k]=el.value;return true;
+}
+document.addEventListener('input',e=>{const el=e.target;if(!bagla(el))return;
+  const per=+el.dataset.per;
+  if(el.dataset.esle&&per){const t=document.getElementById(el.dataset.esle);if(t){const v=num(el.value);t.value=el.value.trim()===''?'':fmtN(el.dataset.ters?v/per:v*per);bagla(t)}}
+  if(el.dataset.hint){const hn=document.getElementById(el.dataset.hint);if(hn)hn.textContent=per?(num(el.value)?'≈ '+q(Math.round(num(el.value)/per*10)/10)+' kutu':'kutu '+q(per)+' kg'):''}
+  if(el.dataset.bul){C.sheet.bul=true;const b=$('#bulSonuc');if(b)b.innerHTML=bulSonuc(C.sheet)}
+  if(el.id==='rf-t'&&okT(el.value)){const x=C.sheet,l=S.lot.find(a=>a.id===x.id);if(!P(l.pid).kural)return;x.rkt=rktHesap(P(l.pid),l.skt,el.value);$('#rf-r').value=x.rkt;$('#rf-rkt').textContent=fmtY(x.rkt)}
+  if(el.id==='rf-r')$('#rf-rkt').textContent=fmtY(el.value);
+});
+document.addEventListener('change',e=>{const el=e.target;
+  if(el.type==='file'&&el.dataset.foto){const f=el.files[0],fn=F[el.dataset.foto];el.value='';if(f&&fn)fn(f,el);return}
+  if(!bagla(el))return;
+  if(el.id==='i-p'){C.sheet.src=''}
+  if(/^k-p\d+$/.test(el.id)){const r=C.sheet.rows[+el.id.slice(3)],k=kk(P(r.pid));if(k&&num(r.k))r.m=fmtN(num(r.k)*k)}
+  if(el.id==='i-s'&&el.value)imhaSrc(C.sheet);
+  if(el.dataset.yenile)yenile();
+  if(el.id==='o-tarih'&&okT(el.value)){C.O.teslim=teslimOf(el.value);render()}
+  if(el.id==='o-teslim')render();
+  if(el.id==='t-tarih'&&okT(el.value)){C.T={tarih:el.value,v:satisYukle(el.value)};render()}
+});
+document.addEventListener('submit',e=>e.preventDefault());
+render();kur();
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+let kurOlay=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();kurOlay=e;$('#kurBtn').hidden=false});
+$('#kurBtn').addEventListener('click',async()=>{if(!kurOlay)return;kurOlay.prompt();await kurOlay.userChoice.catch(()=>{});kurOlay=null;$('#kurBtn').hidden=true});
+</script>
+</body>
+</html>
